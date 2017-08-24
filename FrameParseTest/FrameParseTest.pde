@@ -1,6 +1,8 @@
 import controlP5.*;
 import gab.opencv.*;
 
+int minCannyValue;
+int maxCannyValue;
 int threshold;
 int minLineLength;
 int maxLineGap;
@@ -17,30 +19,45 @@ ControlP5 cp5;
 void setup() {
   size(800, 800);
   
-  threshold = 100;
-  minLineLength = 30;
-  maxLineGap = 20;
+  minCannyValue = 100;
+  maxCannyValue = 300;
+  
+  threshold = 120;
+  minLineLength = 100;
+  maxLineGap = 33;
   
   sourceImageIndex = 0;
   numSourceImages = 100;
   updateSourceImageOpenCV();
   
+  println(sourceImage.width, sourceImage.height);
+  
   cp5 = new ControlP5(this);
   
   float currY = 10;
+  cp5.addSlider("minCannyValue")
+     .setPosition(10, currY)
+     .setRange(0, 512);
+  currY += 15;
+  
+  cp5.addSlider("maxCannyValue")
+     .setPosition(10, currY)
+     .setRange(0, 512);
+  currY += 15;
+  
   cp5.addSlider("threshold")
      .setPosition(10, currY)
-     .setRange(0, 255);
+     .setRange(0, 512);
   currY += 15;
   
   cp5.addSlider("minLineLength")
      .setPosition(10, currY)
-     .setRange(1, 500);
+     .setRange(1, 512);
   currY += 15;
   
   cp5.addSlider("maxLineGap")
      .setPosition(10, currY)
-     .setRange(1, 100);
+     .setRange(1, 512);
   currY += 15;
 }
 
@@ -90,7 +107,7 @@ void updateSourceImageOpenCV() {
 
 void updateOpenCV() {
   opencv = new OpenCV(this, sourceImage);
-  opencv.findCannyEdges(20, 75);
+  opencv.findCannyEdges(minCannyValue, maxCannyValue);
 
   // Find lines with Hough line detection
   // Arguments are: threshold, minLengthLength, maxLineGap
