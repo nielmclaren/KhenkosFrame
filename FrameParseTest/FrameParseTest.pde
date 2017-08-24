@@ -20,7 +20,7 @@ void setup() {
   
   sourceImageIndex = 0;
   numSourceImages = 100;
-  updateFrame();
+  redraw();
   
   cp5 = new ControlP5(this);
   setupInputs();
@@ -66,43 +66,70 @@ PImage loadSourceImage(int index) {
   return loadImage(filename);
 }
 
-void draw() {
+void draw() {}
+
+void redraw() {
   background(32);
-  image(frame.sourceImage, 0, 0);
-  
-  image(frame.opencv.getOutput(), frame.sourceImage.width, 0);
   strokeWeight(3);
-  
-  for (Line line : frame.lines) {
-    if (line.angle >= radians(0) && line.angle < radians(1)) {
-      stroke(0, 255, 0);
-    } else if (line.angle > radians(89) && line.angle < radians(91)) {
-      stroke(255, 0, 0);
-    } else {
-      stroke(0, 0, 255);
+
+  int imageWidth = floor(355. / 2);
+  int imageHeight = floor(391. / 2);
+
+  int index = 0;
+  for (int y = 0; y + imageHeight < height; y += imageHeight) {
+    for (int x = 0; x + imageWidth < width; x += imageWidth) {
+      Frame frame = frameParser.parse(loadSourceImage(normalizeIndex(sourceImageIndex + index)));
+
+      pushMatrix();
+      translate(x, y);
+
+      pushMatrix();
+      scale(0.5);
+
+      image(frame.sourceImage, 0, 0);
+      //image(frame.opencv.getOutput(), frame.sourceImage.width, 0);
+
+      for (Line line : frame.lines) {
+        if (line.angle >= radians(0) && line.angle < radians(1)) {
+          stroke(0, 255, 0);
+        } else if (line.angle > radians(89) && line.angle < radians(91)) {
+          stroke(255, 0, 0);
+        } else {
+          stroke(0, 0, 255);
+        }
+        line(line.start.x, line.start.y, line.end.x, line.end.y);
+      }
+
+      popMatrix();
+      
+      fill(255);
+      text(normalizeIndex(sourceImageIndex + index), 20, 20);
+
+      popMatrix();
+
+      index++;
     }
-    line(line.start.x, line.start.y, line.end.x, line.end.y);
   }
 }
 
 void prevSourceImage() {
-  sourceImageIndex--;
-  if (sourceImageIndex < 0) {
-    sourceImageIndex = numSourceImages - 1;
-  }
-  updateFrame();
+  sourceImageIndex = normalizeIndex(sourceImageIndex - 20);
+  redraw();
 }
 
-void nextSourceImage() {sourceImageIndex++;
-  if (sourceImageIndex >= numSourceImages) {
-    sourceImageIndex = 0;
-  }
-  updateFrame();
+void nextSourceImage() {
+  sourceImageIndex = normalizeIndex(sourceImageIndex + 20);
+  redraw();
 }
 
-void updateFrame() {
-  frame = frameParser.parse(loadSourceImage(sourceImageIndex));
-  println("Source image: " + sourceImageIndex);
+int normalizeIndex(int v) {
+  while (v < 0) {
+    v += numSourceImages;
+  }
+  while (v >= numSourceImages) {
+    v -= numSourceImages;
+  }
+  return v;
 }
 
 void controlEvent(ControlEvent theEvent) {
@@ -123,7 +150,7 @@ void controlEvent(ControlEvent theEvent) {
   println("threshold: " + frameParser.threshold);
   println("minLineLength: " + frameParser.minLineLength);
   println("maxLineGap: " + frameParser.maxLineGap);
-  updateFrame();
+  redraw();
 }
 
 void keyReleased() {
