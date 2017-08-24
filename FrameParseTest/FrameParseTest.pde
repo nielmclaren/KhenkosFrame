@@ -1,15 +1,10 @@
 import controlP5.*;
-import gab.opencv.*;
 
-int minCannyValue;
-int maxCannyValue;
-int threshold;
-int minLineLength;
-int maxLineGap;
+FrameParser frameParser;
 
 int sourceImageIndex;
 int numSourceImages;
-PImage sourceImage;
+Frame frame;
 
 OpenCV opencv;
 ArrayList<Line> lines;
@@ -21,18 +16,11 @@ FileNamer fileNamer;
 void setup() {
   size(800, 800);
   
-  minCannyValue = 100;
-  maxCannyValue = 300;
-  
-  threshold = 120;
-  minLineLength = 100;
-  maxLineGap = 33;
+  frameParser = new FrameParser(this);
   
   sourceImageIndex = 0;
   numSourceImages = 100;
-  updateSourceImageOpenCV();
-  
-  println(sourceImage.width, sourceImage.height);
+  updateFrame();
   
   cp5 = new ControlP5(this);
   setupInputs();
@@ -44,26 +32,31 @@ void setupInputs() {
   float currY = 10;
   cp5.addSlider("minCannyValue")
      .setPosition(10, currY)
+     .setValue(frameParser.minCannyValue)
      .setRange(0, 512);
   currY += 15;
   
   cp5.addSlider("maxCannyValue")
      .setPosition(10, currY)
+     .setValue(frameParser.maxCannyValue)
      .setRange(0, 512);
   currY += 15;
   
   cp5.addSlider("threshold")
      .setPosition(10, currY)
+     .setValue(frameParser.threshold)
      .setRange(0, 512);
   currY += 15;
   
   cp5.addSlider("minLineLength")
      .setPosition(10, currY)
+     .setValue(frameParser.minLineLength)
      .setRange(1, 512);
   currY += 15;
   
   cp5.addSlider("maxLineGap")
      .setPosition(10, currY)
+     .setValue(frameParser.maxLineGap)
      .setRange(1, 512);
   currY += 15;
 }
@@ -75,12 +68,12 @@ PImage loadSourceImage(int index) {
 
 void draw() {
   background(32);
-  image(sourceImage, 0, 0);
+  image(frame.sourceImage, 0, 0);
   
-  image(opencv.getOutput(), sourceImage.width, 0);
+  image(frame.opencv.getOutput(), frame.sourceImage.width, 0);
   strokeWeight(3);
   
-  for (Line line : lines) {
+  for (Line line : frame.lines) {
     if (line.angle >= radians(0) && line.angle < radians(1)) {
       stroke(0, 255, 0);
     } else if (line.angle > radians(89) && line.angle < radians(91)) {
@@ -97,34 +90,40 @@ void prevSourceImage() {
   if (sourceImageIndex < 0) {
     sourceImageIndex = numSourceImages - 1;
   }
-  updateSourceImageOpenCV();
+  updateFrame();
 }
 
 void nextSourceImage() {sourceImageIndex++;
   if (sourceImageIndex >= numSourceImages) {
     sourceImageIndex = 0;
   }
-  updateSourceImageOpenCV();
+  updateFrame();
 }
 
-void updateSourceImageOpenCV() {
-  sourceImage = loadSourceImage(sourceImageIndex);
-  updateOpenCV();
-}
-
-void updateOpenCV() {
-  opencv = new OpenCV(this, sourceImage);
-  opencv.findCannyEdges(minCannyValue, maxCannyValue);
-
-  // Find lines with Hough line detection
-  // Arguments are: threshold, minLengthLength, maxLineGap
-  lines = opencv.findLines(threshold, minLineLength, maxLineGap);
-  
+void updateFrame() {
+  frame = frameParser.parse(loadSourceImage(sourceImageIndex));
   println("Source image: " + sourceImageIndex);
 }
 
 void controlEvent(ControlEvent theEvent) {
-  updateOpenCV();
+  if (theEvent.isFrom(cp5.getController("minCannyValue"))) {
+    frameParser.minCannyValue = floor(theEvent.getValue());
+  } else if (theEvent.isFrom(cp5.getController("maxCannyValue"))) {
+    frameParser.maxCannyValue = floor(theEvent.getValue());
+  } else if (theEvent.isFrom(cp5.getController("threshold"))) {
+    frameParser.threshold = floor(theEvent.getValue());
+  } else if (theEvent.isFrom(cp5.getController("minLineLength"))) {
+    frameParser.minLineLength = floor(theEvent.getValue());
+  } else if (theEvent.isFrom(cp5.getController("maxLineGap"))) {
+    frameParser.maxLineGap = floor(theEvent.getValue());
+  }
+
+  println("minCannyValue: " + frameParser.minCannyValue);
+  println("maxCannyValue: " + frameParser.maxCannyValue);
+  println("threshold: " + frameParser.threshold);
+  println("minLineLength: " + frameParser.minLineLength);
+  println("maxLineGap: " + frameParser.maxLineGap);
+  updateFrame();
 }
 
 void keyReleased() {
