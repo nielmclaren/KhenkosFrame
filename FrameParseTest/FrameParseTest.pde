@@ -16,6 +16,8 @@ ArrayList<Line> lines;
 
 ControlP5 cp5;
 
+FileNamer fileNamer;
+
 void setup() {
   size(800, 800);
   
@@ -33,7 +35,12 @@ void setup() {
   println(sourceImage.width, sourceImage.height);
   
   cp5 = new ControlP5(this);
+  setupInputs();
   
+  fileNamer = new FileNamer("output/frame", "png");
+}
+
+void setupInputs() {
   float currY = 10;
   cp5.addSlider("minCannyValue")
      .setPosition(10, currY)
@@ -127,6 +134,9 @@ void keyReleased() {
       break;
     case 'k':
       nextSourceImage();
+      break;
+    case 'r':
+      save(fileNamer.next());
       break;
   }
 }
