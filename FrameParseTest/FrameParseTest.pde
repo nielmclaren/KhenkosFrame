@@ -1,5 +1,9 @@
 import controlP5.*;
 
+final float MAX_HUB_DISTANCE = 180;
+final float MAX_HUB_INTERSECTION_ERROR = 8;
+final PVector hubPoint = new PVector(183, 163);
+
 FrameParser frameParser;
 
 int sourceImageIndex;
@@ -86,19 +90,26 @@ void redraw() {
       pushMatrix();
       scale(0.5);
 
+      tint(64);
       image(frame.sourceImage, 0, 0);
       //image(frame.opencv.getOutput(), frame.sourceImage.width, 0);
 
       for (Line line : frame.lines) {
-        if (line.angle >= radians(0) && line.angle < radians(1)) {
+        if (isLineOfInterest(line)) {
+          strokeWeight(2);
           stroke(0, 255, 0);
-        } else if (line.angle > radians(89) && line.angle < radians(91)) {
-          stroke(255, 0, 0);
         } else {
-          stroke(0, 0, 255);
+          strokeWeight(1);
+          stroke(255, 0, 0);
         }
         line(line.start.x, line.start.y, line.end.x, line.end.y);
       }
+
+      noFill();
+      stroke(0, 255, 0);
+      strokeWeight(2);
+      ellipseMode(RADIUS);
+      ellipse(hubPoint.x, hubPoint.y, MAX_HUB_INTERSECTION_ERROR, MAX_HUB_INTERSECTION_ERROR);
 
       popMatrix();
       
@@ -107,18 +118,37 @@ void redraw() {
 
       popMatrix();
 
-      index++;
+      index += 7;
     }
   }
 }
 
+boolean isLineOfInterest(Line line) {
+  return PVector.sub(hubPoint, line.start).mag() < MAX_HUB_DISTANCE
+    && PVector.sub(hubPoint, line.end).mag() < MAX_HUB_DISTANCE
+    && distanceBetweenPointAndLine(hubPoint, line) < MAX_HUB_INTERSECTION_ERROR;
+}
+
+float distanceBetweenPointAndLine(PVector point, Line line) {
+  float dx = line.end.x - line.start.x;
+  float dy = line.end.y - line.start.y;
+  if (dx == 0) {
+    return abs(point.x - line.start.x);
+  } else if (dy == 0) {
+    return abs(point.y - line.start.y);
+  } else {
+    // @see https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_two_points
+    return abs(dy * point.x - dx * point.y + line.end.x * line.start.y - line.end.y * line.start.x) / sqrt(dy * dy + dx * dx);
+  }
+}
+
 void prevSourceImage() {
-  sourceImageIndex = normalizeIndex(sourceImageIndex - 20);
+  sourceImageIndex = normalizeIndex(sourceImageIndex - 1);
   redraw();
 }
 
 void nextSourceImage() {
-  sourceImageIndex = normalizeIndex(sourceImageIndex + 20);
+  sourceImageIndex = normalizeIndex(sourceImageIndex + 1);
   redraw();
 }
 
